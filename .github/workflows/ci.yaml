@@ -22,7 +22,7 @@ jobs:
         with:
           java-version: '8'
 
-      - name: Build
+      - name: Tests
         run: ./gradlew hostSpecificTests
 
   dispatchCd:
