@@ -1,8 +1,5 @@
 @file:Suppress("UNUSED_VARIABLE")
 
-import org.jfrog.gradle.plugin.artifactory.dsl.DoubleDelegateWrapper
-import org.jfrog.gradle.plugin.artifactory.dsl.PublisherConfig
-
 repositories {
     mavenCentral()
 }
@@ -10,7 +7,6 @@ repositories {
 plugins {
     kotlin("multiplatform")
     id("maven-publish")
-    id("com.jfrog.artifactory")
 }
 
 val glfwVersion: String by project
@@ -18,78 +14,9 @@ val vulkanVersion: String by project
 
 val group: String by project
 val version: String by project
-val bintrayOrg: String by project
-val bintrayRepo: String by project
 
 project.group = group
 project.version = version
-
-artifactory {
-    setContextUrl("https://sbntt.jfrog.io/artifactory")
-    publish(delegateClosureOf<PublisherConfig> {
-        repository(delegateClosureOf<DoubleDelegateWrapper> {
-            setProperty("repoKey", "kmppge-common")
-            setProperty("username", System.getenv("PUBLISHER_USERNAME"))
-            setProperty("password", System.getenv("PUBLISHER_PASSWORD"))
-        })
-    })
-}
-
-tasks {
-    val buildFromMacos by registering {
-        tasksFiltering("compile", "", false, "ios", "tvos", "watchos", "macos").forEach {
-            dependsOn(this@tasks.getByName(it))
-        }
-    }
-
-    val testFromMacos by registering {
-        tasksFiltering("", "", true, "ios", "tvos", "watchos", "macos").forEach {
-            dependsOn(this@tasks.getByName(it))
-        }
-    }
-
-    val publishFromMacos by registering {
-        tasksFiltering("publish", "GitHubPackagesRepository", false, "ios", "tvos", "watchos", "macos").forEach {
-            dependsOn(this@tasks.getByName(it))
-        }
-    }
-
-    val buildFromLinux by registering {
-        (tasksFiltering("compile", "", false, "android", "linux", "wasm", "js") + "jsJar" + "jvmJar").forEach {
-            dependsOn(this@tasks.getByName(it))
-        }
-    }
-
-    val testFromLinux by registering {
-        tasksFiltering("", "", true, "android", "linux", "wasm", "js", "jvm").forEach {
-            dependsOn(this@tasks.getByName(it))
-        }
-    }
-
-    val publishFromLinux by registering {
-        tasksFiltering("publish", "GitHubPackagesRepository", false, "android", "linux", "wasm", "js", "jvm").forEach {
-            dependsOn(this@tasks.getByName(it))
-        }
-    }
-
-    val buildFromWindows by registering {
-        tasksFiltering("compile", "", false, "mingw").forEach {
-            dependsOn(this@tasks.getByName(it))
-        }
-    }
-
-    val testFromWindows by registering {
-        tasksFiltering("", "", true, "mingw").forEach {
-            dependsOn(this@tasks.getByName(it))
-        }
-    }
-
-    val publishFromWindows by registering {
-        tasksFiltering("publish", "GitHubPackagesRepository", false, "mingw").forEach {
-            dependsOn(this@tasks.getByName(it))
-        }
-    }
-}
 
 kotlin {
     jvm()
@@ -123,8 +50,51 @@ kotlin {
                 implementation(kotlin("test-js"))
             }
         }
+
+        val jvmTest by getting {
+            dependencies {
+                implementation(kotlin("test-junit"))
+            }
+        }
     }
 }
+
+tasks {
+    val macosHostTargets = arrayOf("ios", "tvos", "watchos", "macos")
+    val linuxHostTargets = arrayOf("kotlinmultiplatform", "android", "linux", "wasm", "jvm", "js")
+    val windowsHostTargets = arrayOf("mingw")
+
+    val hostSpecificBuild by registering {
+        dependsOn(when {
+            isMacOsHost() -> tasksFiltering("compile", "", false, *macosHostTargets)
+            isLinuxHost() -> tasksFiltering("compile", "", false, *linuxHostTargets)
+            isWindowsHost() -> tasksFiltering("compile", "", false, *windowsHostTargets)
+            else -> throw RuntimeException("Unsupported host")
+        })
+    }
+
+    val hostSpecificTests by registering {
+        dependsOn(when {
+            isMacOsHost() -> tasksFiltering("", "", true, *macosHostTargets)
+            isLinuxHost() -> tasksFiltering("", "", true, *linuxHostTargets)
+            isWindowsHost() -> tasksFiltering("", "", true, *windowsHostTargets)
+            else -> throw RuntimeException("Unsupported host")
+        })
+    }
+
+    val hostSpecificPublish by registering {
+        dependsOn(when {
+            isMacOsHost() -> tasksFiltering("publish", "GitHubPackagesRepository", false, *macosHostTargets)
+            isLinuxHost() -> tasksFiltering("publish", "GitHubPackagesRepository", false, *linuxHostTargets)
+            isWindowsHost() -> tasksFiltering("publish", "GitHubPackagesRepository", false, *windowsHostTargets)
+            else -> throw RuntimeException("Unsupported host")
+        })
+    }
+}
+
+fun isWindowsHost() = System.getProperty("os.name").startsWith("windows", ignoreCase = true)
+fun isMacOsHost() = System.getProperty("os.name").startsWith("mac os", ignoreCase = true)
+fun isLinuxHost() = System.getProperty("os.name").startsWith("linux", ignoreCase = true)
 
 fun tasksFiltering(prefix: String, suffix: String, test: Boolean, vararg platforms: String) = tasks.names
         .asSequence()
