@@ -52,4 +52,4 @@ jobs:
         with:
           workflow: cd
           token: ${{ secrets.MACHINE_USER_TOKEN }}
-          inputs: '{"sha": "${{ env.GITHUB_SHA }}", "version": "${{ env.LIB_VERSION }}"}'
+          inputs: '{"sha": "${{ github.sha }}", "version": "${{ env.LIB_VERSION }}"}'
