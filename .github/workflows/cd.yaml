@@ -2,7 +2,13 @@ name: cd
 
 on:
   workflow_dispatch:
-    types: [ new-version ]
+    inputs:
+      sha:
+        description: The commit SHA on which the new version was found
+        required: true
+      version:
+        description: The new version to publish
+        required: true
 
 jobs:
   publish:
@@ -14,7 +20,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          ref: ${{ github.event.client_payload.ref }}
+          ref: ${{ github.event.inputs.sha }}
           fetch-depth: 1
 
       - name: Setup JDK
@@ -40,5 +46,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          commitish: ${{ github.event.client_payload.sha }}
-          tag_name: ${{ github.event.client_payload.version }}
+          commitish: ${{ github.event.inputs.sha }}
+          tag_name: ${{ github.event.inputs.version }}
