@@ -27,6 +27,8 @@ jobs:
 
       - name: Publish
         run: ./gradlew hostSpecificPublish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   github_release:
     name: Create a github release

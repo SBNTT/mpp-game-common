@@ -9,8 +9,10 @@ plugins {
     id("maven-publish")
 }
 
-val glfwVersion: String by project
-val vulkanVersion: String by project
+val mavenRegistryName: String by project
+val mavenRegistryUrl: String by project
+val mavenRegistryUsernameEnvVariable: String by project
+val mavenRegistryPasswordEnvVariable: String by project
 
 val group: String by project
 val version: String by project
@@ -20,7 +22,6 @@ project.version = version
 
 kotlin {
     jvm()
-
     macosX64()
     mingwX64(); mingwX86()
     linuxX64(); linuxArm64(); linuxArm32Hfp(); linuxMips32(); linuxMipsel32()
@@ -59,6 +60,20 @@ kotlin {
     }
 }
 
+publishing {
+    repositories {
+        maven {
+            name = mavenRegistryName
+            url = uri(mavenRegistryUrl)
+            credentials {
+                username = System.getenv(mavenRegistryUsernameEnvVariable)
+                password = System.getenv(mavenRegistryPasswordEnvVariable)
+            }
+        }
+    }
+}
+
+
 tasks {
     val macosHostTargets = arrayOf("ios", "tvos", "watchos", "macos")
     val linuxHostTargets = arrayOf("kotlinmultiplatform", "android", "linux", "wasm", "jvm", "js")
@@ -84,9 +99,9 @@ tasks {
 
     val hostSpecificPublish by registering {
         dependsOn(when {
-            isMacOsHost() -> tasksFiltering("publish", "GitHubPackagesRepository", false, *macosHostTargets)
-            isLinuxHost() -> tasksFiltering("publish", "GitHubPackagesRepository", false, *linuxHostTargets)
-            isWindowsHost() -> tasksFiltering("publish", "GitHubPackagesRepository", false, *windowsHostTargets)
+            isMacOsHost() -> tasksFiltering("publish", "${mavenRegistryName}Repository", false, *macosHostTargets)
+            isLinuxHost() -> tasksFiltering("publish", "${mavenRegistryName}Repository", false, *linuxHostTargets)
+            isWindowsHost() -> tasksFiltering("publish", "${mavenRegistryName}Repository", false, *windowsHostTargets)
             else -> throw RuntimeException("Unsupported host")
         })
     }
