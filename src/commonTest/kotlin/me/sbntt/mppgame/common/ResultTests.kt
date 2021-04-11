@@ -1,6 +1,6 @@
 package me.sbntt.mppgame.common
 
-import Result
+import me.sbntt.mppgame.common.Result
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
