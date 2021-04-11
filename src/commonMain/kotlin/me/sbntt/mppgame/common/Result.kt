@@ -1,3 +1,5 @@
+package me.sbntt.mppgame.common
+
 sealed class Result<out S, out E> {
 
     data class Success<S>(val value: S) : Result<S, Nothing>()
